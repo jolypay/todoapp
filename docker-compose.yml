@@ -1,0 +1,101 @@
+#services:
+#  postgres:
+#    image: postgres:15
+#    container_name: todo_postgres
+#    environment:
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: strongpassword123
+#      POSTGRES_DB: todo_app
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U postgres -d todo_app"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#    ports:
+#      - "5432:5432"  # Только для доступа с хоста
+#
+#  migrator:
+#    image: migrate/migrate
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#    volumes:
+#      - ./migrations:/schema  # Папка с миграциями
+#    command:
+#      - "-path=/migrations"
+#      - "-database=postgres://postgres:strongpassword123@postgres:5432/todo_app?sslmode=disable"
+#      - "up"
+#    restart: on-failure  # Повтор при ошибке
+#
+#  app:
+#    build: .
+#    container_name: todo_app
+#    depends_on:
+#      migrator:
+#        condition: service_completed_successfully
+#    environment:
+#      DB_HOST: "postgres"
+#      DB_PORT: "5432"
+#      DB_USER: "postgres"
+#      DB_PASSWORD: "strongpassword123"
+#      DB_NAME: "todo_app"
+#      DB_SSLMODE: "disable"
+#    ports:
+#      - "8000:8000"
+#    restart: unless-stopped
+#
+#volumes:
+#  postgres_data:
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: todo_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: strongpassword123
+      POSTGRES_DB: todo_app
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d todo_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"  # Доступ с хоста
+
+  migrator:
+    image: migrate/migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./schema:/migrations  # Путь внутри контейнера /migrations
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://postgres:strongpassword123@postgres:5432/todo_app?sslmode=disable"
+      - "up"
+    restart: on-failure
+
+  app:
+    build: .
+    container_name: todo_app
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_USER: "postgres"
+      DB_PASSWORD: "strongpassword123"
+      DB_NAME: "todo_app"
+      DB_SSLMODE: "disable"
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
